@@ -1,5 +1,9 @@
 name: Собрать рисованный мультфильм
 
+concurrency:
+  group: video-render-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
