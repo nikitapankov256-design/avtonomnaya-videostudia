@@ -65,7 +65,7 @@ def make_frame(idx,title,caption,kind,t,speaker):
  for yy in range(0,H,60): d.line((0,yy,W,yy),fill=(18,33,50))
  d.rounded_rectangle((22,22,W-22,H-22),radius=26,outline=(55,130,180),width=3)
  d.rounded_rectangle((45,42,W-45,92),radius=14,fill=(25,52,75))
- d.text((62,55),f"АВТОМОБИЛЬНАЯ АЗБУКА  •  {idx}/6",font=font(18,True),fill=(145,215,255))
+ d.text((62,55),f"АВТОМОБИЛЬНАЯ АЗБУКА  •  {idx}/12",font=font(18,True),fill=(145,215,255))
  centered(d,title,130,font(34,True),(250,252,255),640,42)
  bob=int(9*math.sin(t*3))
  if kind=="road":
