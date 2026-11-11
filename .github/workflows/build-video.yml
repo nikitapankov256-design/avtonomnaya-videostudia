@@ -40,6 +40,30 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
         run: python -u build_video.py
+      - name: Проверить MP4, вертикальный формат и обе дорожки
+        run: |
+          test -s autopromo_explainer.mp4
+          python - <<'PY'
+          import json
+          import subprocess
+          result = subprocess.run(
+              ["ffprobe", "-v", "error", "-show_streams", "-show_format",
+               "-of", "json", "autopromo_explainer.mp4"],
+              check=True, capture_output=True, text=True
+          )
+          data = json.loads(result.stdout)
+          streams = data.get("streams", [])
+          video = next((s for s in streams if s.get("codec_type") == "video"), None)
+          audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
+          assert video is not None, "MP4 has no video stream"
+          assert audio is not None, "MP4 has no audio stream"
+          width, height = int(video["width"]), int(video["height"])
+          assert height > width, f"Expected vertical video, got {width}x{height}"
+          duration = float(data["format"]["duration"])
+          assert 60 <= duration <= 120, f"Unexpected duration: {duration:.1f}s"
+          print(f"Validated: {width}x{height}, {duration:.1f}s, video+audio streams")
+          PY
+          ffmpeg -v error -i autopromo_explainer.mp4 -f null -
       - name: Опубликовать MP4 как артефакт сборки
         uses: actions/upload-artifact@v4
         with:
