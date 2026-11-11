@@ -1,6 +1,7 @@
 import math, subprocess, wave, time
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+from gtts import gTTS
 
 W,H,FPS=720,1280,12
 OUT=Path("render"); OUT.mkdir(exist_ok=True)
@@ -138,8 +139,12 @@ for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
   last_error=result.stderr or result.stdout or "No audio returned"
   time.sleep(2+attempt*2)
  if last_error:
-  raise RuntimeError(f"Neural TTS failed after retries: {last_error}")
- run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-ar","24000","-ac","1",str(wav)])
+  print(f"Edge neural voice unavailable for {speaker}; switching to free Google TTS fallback")
+  gTTS(text=speech,lang="ru",slow=(speaker=="mech")).save(str(mp3))
+ if speaker=="mech" and last_error is not None:
+  run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-af","asetrate=21600,aresample=24000,atempo=1.111","-ar","24000","-ac","1",str(wav)])
+ else:
+  run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-ar","24000","-ac","1",str(wav)])
  with wave.open(str(wav),"rb") as w: seconds=w.getnframes()/w.getframerate()
  n=max(42,int((seconds+0.9)*FPS))
  frames=OUT/f"frames_{i:02d}"; frames.mkdir(exist_ok=True)
