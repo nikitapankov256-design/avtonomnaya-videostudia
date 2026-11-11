@@ -23,14 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core
-          pip install pillow piper-tts
-      - name: Скачать русскую голосовую модель Piper
-        run: |
-          mkdir -p voices
-          curl -L --fail --retry 3 -o voices/ru_RU-irina-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx
-          curl -L --fail --retry 3 -o voices/ru_RU-irina-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json
-          curl -L --fail --retry 3 -o voices/ru_RU-dmitri-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/dmitri/medium/ru_RU-dmitri-medium.onnx
-          curl -L --fail --retry 3 -o voices/ru_RU-dmitri-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/dmitri/medium/ru_RU-dmitri-medium.onnx.json
+          pip install pillow edge-tts
       - name: Собрать анимированный ролик
         run: python build_video.py
       - name: Опубликовать MP4 как артефакт сборки
