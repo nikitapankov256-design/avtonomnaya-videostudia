@@ -29,7 +29,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y fonts-dejavu-core
           fi
-          pip install pillow edge-tts
+          pip install pillow edge-tts gTTS
       - name: Собрать анимированный ролик
         run: python build_video.py
       - name: Опубликовать MP4 как артефакт сборки
