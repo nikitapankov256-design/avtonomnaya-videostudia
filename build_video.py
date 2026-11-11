@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from gtts import gTTS
 
-W,H,FPS=720,1280,12
+W,H,FPS=720,1280,15
 OUT=Path("render"); OUT.mkdir(exist_ok=True)
 
 VOICES={"car":"ru-RU-SvetlanaNeural","mech":"ru-RU-DmitryNeural"}
