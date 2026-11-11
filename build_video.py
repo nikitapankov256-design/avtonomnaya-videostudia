@@ -289,12 +289,12 @@ for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
  pitch="+1Hz" if speaker=="car" else "-1Hz"
  # Neural Microsoft Edge voices only. Never fall back to the robotic gTTS voice.
  last=None
- for attempt in range(5):
+ for attempt in range(12):
   p=subprocess.run(["edge-tts","--voice",VOICES[speaker],f"--rate={rate}",f"--pitch={pitch}","--text",speech,"--write-media",str(mp3)],capture_output=True,text=True)
   if p.returncode==0 and mp3.exists() and mp3.stat().st_size>5000:
    last=None; break
   last=(p.stderr or p.stdout or "TTS returned no audio")
-  time.sleep(3+attempt*2)
+  time.sleep(min(60,8*(attempt+1)))
  if last: raise RuntimeError(f"Natural neural voice generation failed for scene {i}: {last}")
  run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(wav)])
  with wave.open(str(wav),"rb") as w: secs=w.getnframes()/w.getframerate()
