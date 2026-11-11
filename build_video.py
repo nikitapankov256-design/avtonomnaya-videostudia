@@ -311,19 +311,20 @@ for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
    run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(wav)])
   else:
    model_dir=OUT/"piper"; model_dir.mkdir(exist_ok=True)
-   model=model_dir/"ru_RU-irina-medium.onnx"
-   config=model_dir/"ru_RU-irina-medium.onnx.json"
+   # Separate local neural voices for the two characters (MIT-licensed Piper models).
+   voice_name="irina" if speaker=="car" else "dmitri"
+   model=model_dir/f"ru_RU-{voice_name}-medium.onnx"
+   config=model_dir/f"ru_RU-{voice_name}-medium.onnx.json"
    import urllib.request
-   urls=[
-    ("https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx?download=true",model),
-    ("https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json?download=true",config)
-   ]
+   base=f"https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/{voice_name}/medium/ru_RU-{voice_name}-medium.onnx"
+   urls=[(base+"?download=true",model),(base+".json?download=true",config)]
    for url,path in urls:
     if not path.exists() or path.stat().st_size<1000:
      req=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0"})
-     with urllib.request.urlopen(req,timeout=180) as response, open(path,"wb") as output:
+     with urllib.request.urlopen(req,timeout=240) as response, open(path,"wb") as output:
       output.write(response.read())
-   p=subprocess.run(["piper","--model",str(model),"--config",str(config),"--output_file",str(wav)],input=speech,text=True,capture_output=True,timeout=180)
+    if path.stat().st_size<1000: raise RuntimeError(f"Incomplete Piper asset: {path}")
+   p=subprocess.run(["piper","--model",str(model),"--config",str(config),"--output_file",str(wav)],input=speech,text=True,capture_output=True,timeout=240)
    if p.returncode!=0 or not wav.exists() or wav.stat().st_size<5000:
     raise RuntimeError(f"Both cloud neural TTS and local neural Piper failed for scene {i}. Edge: {last}. Piper: {p.stderr}")
    run(["ffmpeg","-y","-loglevel","error","-i",str(wav),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(OUT/f"normalized_{i:02d}.wav")])
