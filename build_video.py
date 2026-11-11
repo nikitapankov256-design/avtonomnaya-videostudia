@@ -73,7 +73,8 @@ def make_frame(idx,title,caption,kind,t,speaker):
   for k in range(5):
    yy=470+((k*100+int(t*100))%260)
    d.rounded_rectangle((350,yy,365,yy+42),radius=5,fill=(230,230,200))
-  car(d,360,620+bob,t,.85)
+  car(d,245,620+bob,t,.65)
+  mechanic(d,555,510+bob,t,speaker=="mech")
   d.text((140,810),"СИМПТОМ: УВОД В СТОРОНУ",font=font(22,True),fill=(255,195,110))
  elif kind=="mechanic":
   car(d,230,620+bob,t,.58); mechanic(d,510,500+bob,t,speaker=="mech")
@@ -104,6 +105,7 @@ def make_frame(idx,title,caption,kind,t,speaker):
    yy=470+k*55+int(8*math.sin(t*3+k))
    d.line((145,yy,575,yy),fill=(70,185,255),width=3)
   d.text((185,845),"ИЗМЕРЕНИЕ  →  СРАВНЕНИЕ  →  НАСТРОЙКА",font=font(18,True),fill=(145,215,255))
+  mechanic(d,585,500+bob,t,speaker=="mech")
  else:
   car(d,360,650+bob,t,.82)
   d.ellipse((285,490,435,640),outline=(100,220,160),width=6)
