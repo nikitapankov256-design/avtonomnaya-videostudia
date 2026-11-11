@@ -3,7 +3,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 W,H,FPS=720,1280,18
 OUT=Path("render"); OUT.mkdir(exist_ok=True)
-VOICES={"car":"ru-RU-SvetlanaNeural","mech":"ru-RU-DmitryNeural"}
+# Primary and backup Microsoft neural voices. Keep character voices distinct.
+VOICE_POOLS={
+ "car":["ru-RU-SvetlanaNeural","ru-RU-DariyaNeural"],
+ "mech":["ru-RU-DmitryNeural","ru-RU-PavelNeural"]
+}
 SCENES=[
 ("Когда машину уводит","Мастер, почему машину тянет вправо? Я еду прямо, а меня всё время сносит!","road","car"),
 ("Первый осмотр","Так бывает, когда нарушены углы установки колёс. Но сначала проверяем подвеску и рулевые детали. Нельзя начинать регулировку, пока не убедились, что ходовая исправна.","road","mech"),
@@ -287,15 +291,22 @@ for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
  mp3=OUT/f"voice_{i:02d}.mp3"; wav=OUT/f"voice_{i:02d}.wav"
  rate="+1%" if speaker=="car" else "-2%"
  pitch="+1Hz" if speaker=="car" else "-1Hz"
- # Neural Microsoft Edge voices only. Never fall back to the robotic gTTS voice.
+ # Neural Microsoft Edge voices only. Rotate natural neural alternatives on transient service failures.
+ voice_pool=VOICE_POOLS[speaker]
  last=None
- for attempt in range(12):
-  p=subprocess.run(["edge-tts","--voice",VOICES[speaker],f"--rate={rate}",f"--pitch={pitch}","--text",speech,"--write-media",str(mp3)],capture_output=True,text=True)
-  if p.returncode==0 and mp3.exists() and mp3.stat().st_size>5000:
-   last=None; break
-  last=(p.stderr or p.stdout or "TTS returned no audio")
-  time.sleep(min(60,8*(attempt+1)))
- if last: raise RuntimeError(f"Natural neural voice generation failed for scene {i}: {last}")
+ if not (mp3.exists() and mp3.stat().st_size>5000):
+  for round_no in range(4):
+   for voice_no,voice in enumerate(voice_pool):
+    p=subprocess.run(["edge-tts","--voice",voice,f"--rate={rate}",f"--pitch={pitch}","--text",speech,"--write-media",str(mp3)],capture_output=True,text=True,timeout=150)
+    if p.returncode==0 and mp3.exists() and mp3.stat().st_size>5000:
+     last=None
+     break
+    last=(p.stderr or p.stdout or "TTS returned no audio")
+    if mp3.exists(): mp3.unlink()
+    time.sleep(min(25,5*(round_no+1)+voice_no*2))
+   if last is None: break
+   time.sleep(min(40,8*(round_no+1)))
+ if last: raise RuntimeError(f"Natural neural voice generation failed for scene {i} after retries with {voice_pool}: {last}")
  run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(wav)])
  with wave.open(str(wav),"rb") as w: secs=w.getnframes()/w.getframerate()
  n=max(50,int((secs+0.8)*FPS))
