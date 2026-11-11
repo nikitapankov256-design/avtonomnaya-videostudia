@@ -291,23 +291,43 @@ for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
  mp3=OUT/f"voice_{i:02d}.mp3"; wav=OUT/f"voice_{i:02d}.wav"
  rate="+1%" if speaker=="car" else "-2%"
  pitch="+1Hz" if speaker=="car" else "-1Hz"
- # Neural Microsoft Edge voices only. Rotate natural neural alternatives on transient service failures.
+ # Prefer Microsoft neural voices; if the remote service fails, use a local neural Piper voice.
  voice_pool=VOICE_POOLS[speaker]
  last=None
- if not (mp3.exists() and mp3.stat().st_size>5000):
-  for round_no in range(4):
-   for voice_no,voice in enumerate(voice_pool):
-    p=subprocess.run(["edge-tts","--voice",voice,f"--rate={rate}",f"--pitch={pitch}","--text",speech,"--write-media",str(mp3)],capture_output=True,text=True,timeout=150)
-    if p.returncode==0 and mp3.exists() and mp3.stat().st_size>5000:
-     last=None
-     break
-    last=(p.stderr or p.stdout or "TTS returned no audio")
-    if mp3.exists(): mp3.unlink()
-    time.sleep(min(25,5*(round_no+1)+voice_no*2))
-   if last is None: break
-   time.sleep(min(40,8*(round_no+1)))
- if last: raise RuntimeError(f"Natural neural voice generation failed for scene {i} after retries with {voice_pool}: {last}")
- run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(wav)])
+ if not (wav.exists() and wav.stat().st_size>5000):
+  if not (mp3.exists() and mp3.stat().st_size>5000):
+   for round_no in range(3):
+    for voice_no,voice in enumerate(voice_pool):
+     p=subprocess.run(["edge-tts","--voice",voice,f"--rate={rate}",f"--pitch={pitch}","--text",speech,"--write-media",str(mp3)],capture_output=True,text=True,timeout=150)
+     if p.returncode==0 and mp3.exists() and mp3.stat().st_size>5000:
+      last=None
+      break
+     last=(p.stderr or p.stdout or "TTS returned no audio")
+     if mp3.exists(): mp3.unlink()
+     time.sleep(min(20,4*(round_no+1)+voice_no*2))
+    if last is None: break
+    time.sleep(min(30,6*(round_no+1)))
+  if mp3.exists() and mp3.stat().st_size>5000:
+   run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(wav)])
+  else:
+   model_dir=OUT/"piper"; model_dir.mkdir(exist_ok=True)
+   model=model_dir/"ru_RU-irina-medium.onnx"
+   config=model_dir/"ru_RU-irina-medium.onnx.json"
+   import urllib.request
+   urls=[
+    ("https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx?download=true",model),
+    ("https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json?download=true",config)
+   ]
+   for url,path in urls:
+    if not path.exists() or path.stat().st_size<1000:
+     req=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0"})
+     with urllib.request.urlopen(req,timeout=180) as response, open(path,"wb") as output:
+      output.write(response.read())
+   p=subprocess.run(["piper","--model",str(model),"--config",str(config),"--output_file",str(wav)],input=speech,text=True,capture_output=True,timeout=180)
+   if p.returncode!=0 or not wav.exists() or wav.stat().st_size<5000:
+    raise RuntimeError(f"Both cloud neural TTS and local neural Piper failed for scene {i}. Edge: {last}. Piper: {p.stderr}")
+   run(["ffmpeg","-y","-loglevel","error","-i",str(wav),"-af","loudnorm=I=-17:TP=-2:LRA=7","-ar","24000","-ac","1",str(OUT/f"normalized_{i:02d}.wav")])
+   (OUT/f"normalized_{i:02d}.wav").replace(wav)
  with wave.open(str(wav),"rb") as w: secs=w.getnframes()/w.getframerate()
  n=max(50,int((secs+0.8)*FPS))
  frames=OUT/f"frames_{i:02d}"; frames.mkdir(exist_ok=True)
