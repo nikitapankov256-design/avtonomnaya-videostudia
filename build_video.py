@@ -1,4 +1,4 @@
-import math, subprocess, wave
+import math, subprocess, wave, time
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
@@ -127,7 +127,18 @@ clips=[]
 for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
  mp3=OUT/f"voice_{i:02d}.mp3"
  wav=OUT/f"voice_{i:02d}.wav"
- run(["edge-tts","--voice",VOICES[speaker],"--text",speech,"--write-media",str(mp3)])
+ rate="--rate=+5%" if speaker=="car" else "--rate=-4%"
+ pitch="--pitch=+3Hz" if speaker=="car" else "--pitch=-2Hz"
+ last_error=None
+ for attempt in range(4):
+  result=subprocess.run(["edge-tts","--voice",VOICES[speaker],rate,pitch,"--text",speech,"--write-media",str(mp3)],capture_output=True,text=True)
+  if result.returncode==0 and mp3.exists() and mp3.stat().st_size>3000:
+   last_error=None
+   break
+  last_error=result.stderr or result.stdout or "No audio returned"
+  time.sleep(2+attempt*2)
+ if last_error:
+  raise RuntimeError(f"Neural TTS failed after retries: {last_error}")
  run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-ar","24000","-ac","1",str(wav)])
  with wave.open(str(wav),"rb") as w: seconds=w.getnframes()/w.getframerate()
  n=max(42,int((seconds+0.9)*FPS))
