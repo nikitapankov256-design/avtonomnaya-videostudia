@@ -5,20 +5,24 @@ from PIL import Image, ImageDraw, ImageFont
 W,H,FPS=720,1280,12
 OUT=Path("render"); OUT.mkdir(exist_ok=True)
 
-VOICES={"car":"voices/ru_RU-irina-medium.onnx","mech":"voices/ru_RU-dmitri-medium.onnx"}
+VOICES={"car":"ru-RU-SvetlanaNeural","mech":"ru-RU-DmitryNeural"}
 SCENES=[
-("Знакомство","Ой, мастер! Почему меня всё время тянет вправо? Я уже устал ехать прямо боком!","road","car"),
-("Знакомство","Спокойно, дружище. Причин может быть несколько. Начнём с диагностики, а не с регулировки наугад.","road","mech"),
-("Проверка ходовой","А что вы будете проверять сначала?","mechanic","car"),
-("Проверка ходовой","Подвеску и рулевые элементы: ищем люфты, износ и повреждения. Неисправности сначала устраняют.","mechanic","mech"),
-("Развал","А развал — это что, колёса криво стоят?","camber","car"),
-("Развал","Это угол наклона колеса, если смотреть спереди. Важны точные значения, которые предусмотрел производитель.","camber","mech"),
-("Схождение и кастер","А схождение? И кастер? Названия прямо космические!","angles","car"),
-("Схождение и кастер","Схождение — направление колёс сверху. Кастер — наклон оси поворота сбоку. Оба параметра влияют на управляемость.","angles","mech"),
-("3D-стенд","И как вы узнаете, какие углы нужны именно мне?","stand","car"),
-("3D-стенд","На стенде 3D-развал-схождения измеряем положение колёс и сравниваем данные с параметрами производителя.","stand","mech"),
-("Настройка и проверка","Значит, дальше меня настраивают и проверяют?","finish","car"),
-("Настройка и проверка","Да. Выполняем регулировку, проверяем значения и поведение машины. При уводе или неравномерном износе шин нужна диагностика.","finish","mech")
+("Увод в сторону","Мастер, помогите! Машину тянет вправо, а руль стоит криво!","road","car"),
+("С чего начать","Такое бывает при нарушении углов установки колёс, но сначала проверим подвеску и рулевые детали.","road","mech"),
+("Износ шин","А если шины стираются неравномерно — это тоже сигнал?","mechanic","car"),
+("Износ шин","Да. Если одна сторона протектора изнашивается быстрее, нужна диагностика. Но причин бывает несколько.","mechanic","mech"),
+("Проверка ходовой","Что вы проверяете до стенда?","mechanic","car"),
+("Проверка ходовой","Сайлентблоки, шаровые опоры, рулевые наконечники и другие элементы. Люфты и повреждения сначала устраняют.","mechanic","mech"),
+("Что такое развал","Теперь объясните развал. Это наклон колёс?","camber","car"),
+("Что такое развал","Верно. Развал — наклон колеса относительно вертикали, если смотреть на автомобиль спереди.","camber","mech"),
+("Что такое схождение","А схождение — это когда колёса смотрят в разные стороны?","angles","car"),
+("Что такое схождение","Почти. Это угол направления колёс относительно продольной оси автомобиля. Даже небольшие отклонения влияют на износ шин.","angles","mech"),
+("Что такое кастер","И что за загадочный кастер?","angles","car"),
+("Что такое кастер","Кастер — продольный наклон оси поворота. Он влияет на возврат руля и устойчивость движения.","angles","mech"),
+("3D-измерение","Как понять, какие значения правильные?","stand","car"),
+("3D-измерение","Измеряем углы на 3D-стенде и сравниваем с данными производителя для конкретной модели и комплектации.","stand","mech"),
+("Регулировка","А после измерения сразу крутите регулировки?","finish","car"),
+("Регулировка","Сначала учитываем состояние подвески, затем выполняем допустимые регулировки и проверяем результат. Если машину уводит или шины стираются неравномерно — начните с диагностики.","finish","mech")
 ]
 def font(n,b=False):
  p="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if b else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -50,7 +54,8 @@ def car(d,x,y,t,scale=1):
   d.ellipse((ex,y-82*scale,ex+25*scale,y-55*scale),fill="white")
   d.ellipse((ex+8*scale,y-75*scale,ex+18*scale,y-59*scale),fill=(15,25,40))
  mouth=8+10*abs(math.sin(t*7))
- d.arc((x-18*scale,y-53*scale,x+20*scale,y-53*scale+mouth),0,180,fill=(70,15,25),width=4)
+ if int(t*7)%2==0: d.ellipse((x-18*scale,y-53*scale,x+20*scale,y-53*scale+mouth),fill=(70,15,25))
+ else: d.arc((x-18*scale,y-53*scale,x+20*scale,y-53*scale+mouth),0,180,fill=(70,15,25),width=4)
 def mechanic(d,x,y,t,talking=False):
  d.ellipse((x-48,y-55,x+48,y+42),fill=(235,185,145),outline="white",width=3)
  d.pieslice((x-52,y-75,x+52,y+20),180,360,fill=(30,48,65))
@@ -65,7 +70,7 @@ def make_frame(idx,title,caption,kind,t,speaker):
  for yy in range(0,H,60): d.line((0,yy,W,yy),fill=(18,33,50))
  d.rounded_rectangle((22,22,W-22,H-22),radius=26,outline=(55,130,180),width=3)
  d.rounded_rectangle((45,42,W-45,92),radius=14,fill=(25,52,75))
- d.text((62,55),f"АВТОМОБИЛЬНАЯ АЗБУКА  •  {idx}/12",font=font(18,True),fill=(145,215,255))
+ d.text((62,55),f"АВТОМОБИЛЬНАЯ АЗБУКА  •  {idx}/16",font=font(18,True),fill=(145,215,255))
  centered(d,title,130,font(34,True),(250,252,255),640,42)
  bob=int(9*math.sin(t*3))
  if kind=="road":
@@ -120,10 +125,12 @@ def make_frame(idx,title,caption,kind,t,speaker):
 def run(cmd,**kw): subprocess.run(cmd,check=True,**kw)
 clips=[]
 for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
+ mp3=OUT/f"voice_{i:02d}.mp3"
  wav=OUT/f"voice_{i:02d}.wav"
- run(["piper","--model",VOICES[speaker],"--output_file",str(wav)],input=speech.encode("utf-8"))
+ run(["edge-tts","--voice",VOICES[speaker],"--text",speech,"--write-media",str(mp3)])
+ run(["ffmpeg","-y","-loglevel","error","-i",str(mp3),"-ar","24000","-ac","1",str(wav)])
  with wave.open(str(wav),"rb") as w: seconds=w.getnframes()/w.getframerate()
- n=max(36,int((seconds+0.5)*FPS))
+ n=max(42,int((seconds+0.9)*FPS))
  frames=OUT/f"frames_{i:02d}"; frames.mkdir(exist_ok=True)
  for k in range(n):
   make_frame(i,title,speech,kind,k/FPS,speaker).save(frames/f"f_{k:05d}.png")
