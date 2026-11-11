@@ -45,10 +45,10 @@ def centered(d,s,y,f,fill,width=620,step=None):
   d.text(((W-tw)//2,y),ln,font=f,fill=fill,stroke_width=2,stroke_fill=(10,18,28)); y+=step
  return y
 def gradient(im,top,bottom):
- p=im.load()
+ strip=Image.new("RGB",(1,H)); p=strip.load()
  for y in range(H):
-  q=y/(H-1); c=tuple(int(top[k]*(1-q)+bottom[k]*q) for k in range(3))
-  for x in range(W): p[x,y]=c
+  q=y/(H-1); p[0,y]=tuple(int(top[k]*(1-q)+bottom[k]*q) for k in range(3))
+ im.paste(strip.resize((W,H),Image.Resampling.BILINEAR),(0,0))
 def workshop(d,t):
  d.polygon([(0,0),(720,0),(720,800),(0,800)],fill=(30,48,66))
  d.polygon([(0,780),(720,780),(720,1280),(0,1280)],fill=(43,58,70))
