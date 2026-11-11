@@ -32,7 +32,7 @@ def wrap(draw,s,f,width):
  out=[]; line=""
  for word in s.split():
   test=(line+" "+word).strip()
-  if draw.textbbox((0,0),test,font=f)[2] <= width: line=test
+  if draw.textbbox((0,0),test,font=f)[2]<=width: line=test
   else:
    if line: out.append(line)
    line=word
@@ -42,86 +42,124 @@ def centered(d,s,y,f,fill,width=620,step=None):
  step=step or f.size+9
  for ln in wrap(d,s,f,width):
   tw=d.textbbox((0,0),ln,font=f)[2]
-  d.text(((W-tw)//2,y),ln,font=f,fill=fill); y+=step
+  d.text(((W-tw)//2,y),ln,font=f,fill=fill,stroke_width=2,stroke_fill=(10,18,28)); y+=step
  return y
-def car(d,x,y,t,scale=1):
- # body, windows, wheels and expressive face
- d.rounded_rectangle((x-175*scale,y-42*scale,x+175*scale,y+52*scale),radius=int(38*scale),fill=(40,145,210),outline=(225,245,255),width=4)
- d.polygon([(x-105*scale,y-40*scale),(x-58*scale,y-105*scale),(x+70*scale,y-105*scale),(x+120*scale,y-40*scale)],fill=(90,195,225),outline=(240,250,255))
+def gradient(im,top,bottom):
+ p=im.load()
+ for y in range(H):
+  q=y/(H-1); c=tuple(int(top[k]*(1-q)+bottom[k]*q) for k in range(3))
+  for x in range(W): p[x,y]=c
+def workshop(d,t):
+ d.polygon([(0,0),(720,0),(720,800),(0,800)],fill=(30,48,66))
+ d.polygon([(0,780),(720,780),(720,1280),(0,1280)],fill=(43,58,70))
+ for x in (75,360,645):
+  d.polygon([(x-10,0),(x+10,0),(x+70,760),(x-70,760)],fill=(39,61,78))
+  d.rounded_rectangle((x-65,60,x+65,79),radius=8,fill=(111,195,222))
+  d.ellipse((x-30,48,x+30,91),fill=(67,126,154))
+ for y in (180,330,480,630): d.line((0,y,720,y),fill=(53,78,94),width=3)
+ d.rounded_rectangle((18,500,145,790),radius=14,fill=(23,39,52),outline=(91,125,143),width=4)
+ d.rounded_rectangle((570,490,700,790),radius=14,fill=(23,39,52),outline=(91,125,143),width=4)
+ for y in (550,615,680,745): d.line((38,y,125,y),fill=(85,111,128),width=4)
+ for x in range(-400,1200,160): d.line((360,790,x,1280),fill=(61,81,93),width=2)
+ for y in (900,1030,1160): d.line((0,y,720,y),fill=(58,77,89),width=2)
+ # floating dust motes give the frame a little life
+ for i in range(24):
+  x=(i*97+int(t*(12+i%4)*7))%720; y=(i*71+int(t*(8+i%3)*5))%880; r=2+i%3
+  d.ellipse((x-r,y-r,x+r,y+r),fill=(105,159,178) if i%2 else (217,173,113))
+def draw_car(d,x,y,t,scale=1):
+ y+=int(7*math.sin(t*3))
+ d.ellipse((x-200*scale,y+66*scale,x+200*scale,y+110*scale),fill=(19,28,37))
+ d.rounded_rectangle((x-190*scale,y-45*scale,x+190*scale,y+65*scale),radius=int(42*scale),fill=(194,72,48),outline=(255,205,160),width=max(2,int(5*scale)))
+ d.polygon([(x-120*scale,y-42*scale),(x-62*scale,y-112*scale),(x+80*scale,y-112*scale),(x+142*scale,y-42*scale)],fill=(225,111,70),outline=(255,216,177))
+ d.polygon([(x-88*scale,y-52*scale),(x-48*scale,y-99*scale),(x+2*scale,y-99*scale),(x+2*scale,y-52*scale)],fill=(91,157,178))
+ d.polygon([(x+12*scale,y-99*scale),(x+72*scale,y-99*scale),(x+112*scale,y-52*scale),(x+12*scale,y-52*scale)],fill=(91,157,178))
  for wx in (x-112*scale,x+112*scale):
-  d.ellipse((wx-34*scale,y+22*scale,wx+34*scale,y+90*scale),fill=(12,18,28),outline=(220,230,240),width=4)
-  d.ellipse((wx-13*scale,y+44*scale,wx+13*scale,y+70*scale),fill=(150,190,210))
- for ex in (x-38*scale,x+18*scale):
-  d.ellipse((ex,y-82*scale,ex+25*scale,y-55*scale),fill="white")
-  d.ellipse((ex+8*scale,y-75*scale,ex+18*scale,y-59*scale),fill=(15,25,40))
- mouth=8+10*abs(math.sin(t*7))
- if int(t*7)%2==0: d.ellipse((x-18*scale,y-53*scale,x+20*scale,y-53*scale+mouth),fill=(70,15,25))
- else: d.arc((x-18*scale,y-53*scale,x+20*scale,y-53*scale+mouth),0,180,fill=(70,15,25),width=4)
-def mechanic(d,x,y,t,talking=False):
- d.ellipse((x-48,y-55,x+48,y+42),fill=(235,185,145),outline="white",width=3)
- d.pieslice((x-52,y-75,x+52,y+20),180,360,fill=(30,48,65))
- d.rounded_rectangle((x-48,y+35,x+48,y+185),radius=22,fill=(35,95,145),outline="white",width=3)
- d.line((x+25,y+80,x+95,y+35+int(18*math.sin(t*4))),fill=(235,185,145),width=17)
- for ex in (x-25,x+10): d.ellipse((ex,y-10,ex+12,y+4),fill=(20,30,40))
- if talking and int(t*7)%2==0: d.ellipse((x-13,y+5,x+15,y+28),fill=(100,25,35))
- else: d.arc((x-15,y+5,x+15,y+25),0,180,fill=(100,30,35),width=3)
-def make_frame(idx,title,caption,kind,t,speaker):
- im=Image.new("RGB",(W,H),(13,23,38)); d=ImageDraw.Draw(im)
- for xx in range(0,W,60): d.line((xx,0,xx,H),fill=(18,33,50))
- for yy in range(0,H,60): d.line((0,yy,W,yy),fill=(18,33,50))
- d.rounded_rectangle((22,22,W-22,H-22),radius=26,outline=(55,130,180),width=3)
- d.rounded_rectangle((45,42,W-45,92),radius=14,fill=(25,52,75))
- d.text((62,55),f"АВТОМОБИЛЬНАЯ АЗБУКА  •  {idx}/16",font=font(18,True),fill=(145,215,255))
- centered(d,title,130,font(34,True),(250,252,255),640,42)
- bob=int(9*math.sin(t*3))
- if kind=="road":
-  d.polygon([(0,690),(720,690),(580,420),(140,420)],fill=(43,57,68))
-  for k in range(5):
-   yy=470+((k*100+int(t*100))%260)
-   d.rounded_rectangle((350,yy,365,yy+42),radius=5,fill=(230,230,200))
-  car(d,245,620+bob,t,.65)
-  mechanic(d,555,510+bob,t,speaker=="mech")
-  d.text((140,810),"СИМПТОМ: УВОД В СТОРОНУ",font=font(22,True),fill=(255,195,110))
- elif kind=="mechanic":
-  car(d,230,620+bob,t,.58); mechanic(d,510,500+bob,t,speaker=="mech")
-  d.text((115,820),"ОСМОТР ПОДВЕСКИ И РУЛЕВЫХ ДЕТАЛЕЙ",font=font(18,True),fill=(145,215,255))
- elif kind in ("camber","angles"):
-  labels=["РАЗВАЛ","СХОЖДЕНИЕ","КАСТЕР"] if kind=="angles" else ["НАКЛОН КОЛЕСА"]
-  for j,label in enumerate(labels):
-   cx=120+j*240 if kind=="angles" else 360
-   d.rounded_rectangle((cx-92,410,cx+92,800),radius=18,fill=(22,44,65),outline=(75,150,195),width=3)
-   tw=d.textbbox((0,0),label,font=font(17,True))[2]
-   d.text((cx-tw/2,430),label,font=font(17,True),fill=(145,215,255))
-   if j==0:
-    d.line((cx,510,cx,735),fill="white",width=3)
-    d.line((cx-35,545,cx-65,700),fill=(255,185,100),width=18)
-    d.line((cx+35,545,cx+65,700),fill=(255,185,100),width=18)
-   elif j==1:
-    d.line((cx-48,520,cx-48,735),fill=(255,185,100),width=18); d.line((cx+48,520,cx+48,735),fill=(255,185,100),width=18)
-    d.line((cx-70,520,cx+70,520),fill="white",width=3)
-   else:
-    d.line((cx,515,cx,735),fill="white",width=3); d.line((cx-48,715,cx+30,525),fill=(255,185,100),width=18)
-    d.arc((cx-65,630,cx+70,780),205,300,fill=(100,220,160),width=6)
- elif kind=="stand":
-  car(d,360,670+bob,t,.68)
-  for x in (220,500):
-   d.rounded_rectangle((x-32,520,x+32,745),radius=10,fill=(35,78,105),outline=(140,220,255),width=5)
-   d.ellipse((x-18,575,x+18,611),outline=(255,195,100),width=5)
-  for k in range(4):
-   yy=470+k*55+int(8*math.sin(t*3+k))
-   d.line((145,yy,575,yy),fill=(70,185,255),width=3)
-  d.text((185,845),"ИЗМЕРЕНИЕ  →  СРАВНЕНИЕ  →  НАСТРОЙКА",font=font(18,True),fill=(145,215,255))
-  mechanic(d,585,500+bob,t,speaker=="mech")
+  d.ellipse((wx-39*scale,y+28*scale,wx+39*scale,y+106*scale),fill=(15,22,29),outline=(215,220,217),width=max(2,int(5*scale)))
+  d.ellipse((wx-20*scale,y+48*scale,wx+20*scale,y+88*scale),fill=(123,149,157))
+  for q in range(4):
+   an=q*math.pi/2+t*2
+   xx=wx+int(13*scale*math.cos(an)); yy=y+68*scale+int(13*scale*math.sin(an))
+   d.ellipse((xx-3,yy-3,xx+3,yy+3),fill=(239,242,235))
+ for ex in (x-42*scale,x+27*scale):
+  d.ellipse((ex,y-86*scale,ex+27*scale,y-55*scale),fill=(255,255,240))
+  d.ellipse((ex+9*scale,y-78*scale,ex+20*scale,y-59*scale),fill=(19,30,40))
+ if int(t*7)%2==0: d.ellipse((x-18*scale,y-39*scale,x+22*scale,y-23*scale),fill=(70,22,29))
+ else: d.arc((x-18*scale,y-42*scale,x+22*scale,y-22*scale),0,180,fill=(70,22,29),width=3)
+ d.ellipse((x+145*scale,y-12*scale,x+180*scale,y+12*scale),fill=(255,221,145))
+def draw_mechanic(d,x,y,t,talking=False,gesture=0):
+ y+=int(5*math.sin(t*3))
+ d.ellipse((x-48,y-66,x+48,y+32),fill=(229,177,143),outline=(255,220,188),width=3)
+ d.pieslice((x-52,y-83,x+52,y+20),180,360,fill=(34,49,62),outline=(12,22,31),width=3)
+ d.rounded_rectangle((x-55,y-57,x+55,y-39),radius=8,fill=(40,62,77))
+ for ex in (x-27,x+10): d.ellipse((ex,y-20,ex+13,y-5),fill=(23,31,39))
+ if talking and int(t*7)%2==0: d.ellipse((x-12,y+2,x+14,y+22),fill=(104,34,41))
+ else: d.arc((x-14,y+2,x+14,y+22),0,180,fill=(104,34,41),width=3)
+ d.rounded_rectangle((x-57,y+26,x+57,y+190),radius=22,fill=(40,103,137),outline=(159,208,220),width=4)
+ d.line((x-34,y+60,x+34,y+60),fill=(220,229,220),width=3)
+ ay=y+94+int(18*math.sin(t*4))
+ if gesture%2==0:
+  d.line((x+38,y+65,x+82,ay,x+120,ay-24),fill=(229,177,143),width=17)
+  d.ellipse((x+108,ay-39,x+136,ay-11),fill=(229,177,143))
  else:
-  car(d,360,650+bob,t,.82)
-  d.ellipse((285,490,435,640),outline=(100,220,160),width=6)
-  d.text((190,850),"КОНТРОЛЬ РЕЗУЛЬТАТА",font=font(24,True),fill=(110,225,165))
- d.rounded_rectangle((45,965,W-45,1195),radius=22,fill=(23,44,64),outline=(65,120,160),width=2)
- centered(d,caption,995,font(19),(230,239,247),590,29)
- speaker_label="МАШИНА ГОВОРИТ" if speaker=="car" else "МАСТЕР ОБЪЯСНЯЕТ"
- d.rounded_rectangle((45,915,675,950),radius=12,fill=(35,65,88))
- d.text((65,922),speaker_label,font=font(17,True),fill=(255,205,120) if speaker=="car" else (145,215,255))
- d.text((55,1220),"ДИАЛОГОВЫЙ ОБУЧАЮЩИЙ МУЛЬТФИЛЬМ",font=font(14,True),fill=(125,160,190))
+  d.line((x-38,y+65,x-76,ay,x-100,ay-18),fill=(229,177,143),width=17)
+  d.ellipse((x-115,ay-33,x-87,ay-5),fill=(229,177,143))
+def title_card(d,title,t):
+ f=font(36,True); yy=125
+ for line in wrap(d,title,f,640):
+  tw=d.textbbox((0,0),line,font=f,stroke_width=2)[2]; xx=(W-tw)//2
+  d.text((xx+3,yy+5),line,font=f,fill=(7,14,21),stroke_width=5,stroke_fill=(7,14,21))
+  d.text((xx,yy),line,font=f,fill=(255,248,230),stroke_width=2,stroke_fill=(30,42,54)); yy+=47
+def make_frame(idx,title,caption,kind,t,speaker):
+ im=Image.new("RGB",(W,H)); gradient(im,(28,47,65),(66,87,98)); d=ImageDraw.Draw(im)
+ workshop(d,t)
+ bob=int(7*math.sin(t*3))
+ if kind=="road":
+  d.polygon([(0,820),(720,820),(720,970),(0,970)],fill=(35,49,60))
+  for k in range(5):
+   xx=(k*190+int(t*100))%850-60; d.line((xx,835,xx+75,835),fill=(240,189,103),width=5)
+  draw_car(d,250,660+bob,t,.72); draw_mechanic(d,555,520+bob,t,speaker=="mech",0)
+  centered(d,"МАШИНУ УВОДИТ В СТОРОНУ",865,font(20,True),(255,205,135),540,26)
+ elif kind=="mechanic":
+  draw_car(d,235,650+bob,t,.64); draw_mechanic(d,525,520+bob,t,speaker=="mech",int(t*2)%2)
+  centered(d,"СНАЧАЛА — ПРОВЕРКА ХОДОВОЙ",865,font(19,True),(170,224,244),560,25)
+ elif kind in ("camber","angles"):
+  names=["РАЗВАЛ","СХОЖДЕНИЕ","КАСТЕР"] if kind=="angles" else ["РАЗВАЛ"]
+  for j,label in enumerate(names):
+   cx=120+j*240 if kind=="angles" else 360
+   d.rounded_rectangle((cx-100,405,cx+100,805),radius=22,fill=(30,55,73),outline=(119,177,198),width=4)
+   f=font(17,True); tw=d.textbbox((0,0),label,font=f)[2]; d.text((cx-tw/2,425),label,font=f,fill=(255,215,154))
+   d.line((cx,500,cx,735),fill=(225,239,239),width=4)
+   if label=="РАЗВАЛ":
+    z=18*math.sin(t*1.8); d.line((cx-35+z,535,cx-55+z,720),fill=(255,167,103),width=28); d.line((cx+35-z,535,cx+55-z,720),fill=(255,167,103),width=28)
+    d.arc((cx-92,560,cx+92,740),260,350,fill=(116,223,181),width=5)
+   elif label=="СХОЖДЕНИЕ":
+    z=18*math.sin(t*2); d.line((cx-48+z,520,cx-65+z,730),fill=(255,167,103),width=25); d.line((cx+48-z,520,cx+65-z,730),fill=(255,167,103),width=25)
+    d.line((cx-78,515,cx+78,515),fill=(116,223,181),width=4)
+   else:
+    d.line((cx-45,715,cx+32,525),fill=(255,167,103),width=26); d.arc((cx-80,620,cx+82,790),205,300,fill=(116,223,181),width=6)
+  centered(d,"СХЕМА УГЛОВ УСТАНОВКИ КОЛЁС",850,font(18,True),(170,224,244),570,25)
+ elif kind=="stand":
+  d.rounded_rectangle((78,750,642,815),radius=18,fill=(28,41,51),outline=(112,156,177),width=3)
+  draw_car(d,360,655+bob,t,.72)
+  for x in (205,515):
+   d.rounded_rectangle((x-34,490,x+34,755),radius=12,fill=(35,83,110),outline=(170,218,230),width=4)
+   d.rounded_rectangle((x-24,555,x+24,620),radius=8,fill=(211,231,231),outline=(67,126,155),width=3)
+  for k in range(4):
+   yy=470+k*55+int(8*math.sin(t*3+k)); d.line((165,yy,555,yy),fill=(76,192,237),width=3)
+  draw_mechanic(d,600,510+bob,t,speaker=="mech",0)
+  centered(d,"3D-ИЗМЕРЕНИЕ И СРАВНЕНИЕ С НОРМОЙ",865,font(17,True),(170,224,244),560,24)
+ else:
+  draw_car(d,360,660+bob,t,.82)
+  d.ellipse((270,475,450,655),outline=(104,223,165),width=7)
+  if int(t*2)%2==0: d.line((315,560,350,595,410,525),fill=(104,223,165),width=12)
+  draw_mechanic(d,570,525+bob,t,speaker=="mech",1)
+  centered(d,"ПРОВЕРКА РЕЗУЛЬТАТА",865,font(21,True),(151,239,185),450,26)
+ title_card(d,title,t)
+ d.rounded_rectangle((38,970,W-38,1195),radius=24,fill=(17,31,44),outline=(95,143,166),width=3)
+ label="АВТОМОБИЛЬ" if speaker=="car" else "МЕХАНИК"
+ col=(255,198,124) if speaker=="car" else (144,220,245)
+ d.rounded_rectangle((58,945,265,980),radius=12,fill=(39,65,83)); d.text((75,952),label,font=font(16,True),fill=col)
+ centered(d,caption,1000,font(19),(246,247,239),580,31)
  return im
 def run(cmd,**kw): subprocess.run(cmd,check=True,**kw)
 clips=[]
