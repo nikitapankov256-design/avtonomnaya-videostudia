@@ -290,7 +290,7 @@ for i,(title,speech,kind,speaker) in enumerate(SCENES,1):
  # Neural Microsoft Edge voices only. Never fall back to the robotic gTTS voice.
  last=None
  for attempt in range(5):
-  p=subprocess.run(["edge-tts","--voice",VOICES[speaker],"--rate",rate,"--pitch",pitch,"--text",speech,"--write-media",str(mp3)],capture_output=True,text=True)
+  p=subprocess.run(["edge-tts","--voice",VOICES[speaker],f"--rate={rate}",f"--pitch={pitch}","--text",speech,"--write-media",str(mp3)],capture_output=True,text=True)
   if p.returncode==0 and mp3.exists() and mp3.stat().st_size>5000:
    last=None; break
   last=(p.stderr or p.stdout or "TTS returned no audio")
