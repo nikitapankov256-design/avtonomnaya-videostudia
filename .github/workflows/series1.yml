@@ -4,32 +4,45 @@ on:
   push:
     paths:
       - 'series1/**'
+      - 'requirements.txt'
       - '.github/workflows/series1.yml'
 permissions:
   contents: read
 jobs:
   render:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: series1-render-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Установить инструменты
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Установить системные инструменты
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core espeak-ng
+      - name: Установить Python-зависимости
+        run: |
           python -m pip install --upgrade pip
-          pip install pillow edge-tts
-      - name: Создать озвучку и сцены
+          pip install -r requirements.txt
+      - name: Проверить синтаксис Python
+        run: python -m compileall -q series1
+      - name: Собрать видео
         run: python series1/make_episode.py
-      - name: Проверить MP4
+      - name: Проверить MP4 и параметры
         run: |
           test -s output/za_zakrytoy_dveryu_ep01.mp4
-          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 output/za_zakrytoy_dveryu_ep01.mp4
+          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate -show_entries format=duration,size -of json output/za_zakrytoy_dveryu_ep01.mp4
+          ffmpeg -v error -i output/za_zakrytoy_dveryu_ep01.mp4 -f null -
       - name: Загрузить готовое видео
         uses: actions/upload-artifact@v4
         with:
           name: za-zakrytoy-dveryu-episode-01
           path: output/za_zakrytoy_dveryu_ep01.mp4
           if-no-files-found: error
+          retention-days: 14
