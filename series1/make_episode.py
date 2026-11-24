@@ -85,8 +85,19 @@ def draw_scene(i, label, caption):
     return im
 
 async def make_voice(text, voice, path):
-    import edge_tts
-    await edge_tts.Communicate(text, voice, rate="+2%", volume="+0%").save(str(path))
+    # Prefer cloud neural voices; if the free endpoint refuses a request,
+    # fall back to the installed offline Russian espeak-ng voice.
+    try:
+        import edge_tts
+        await edge_tts.Communicate(text, voice, rate="+2%", volume="+0%").save(str(path))
+        if path.exists() and path.stat().st_size > 1000:
+            return
+    except Exception as exc:
+        print(f"Neural TTS unavailable, using offline Russian voice: {exc}")
+    wav = path.with_suffix(".wav")
+    subprocess.run(["espeak-ng", "-v", "ru", "-s", "145", "-p", "42", "-w", str(wav), text], check=True)
+    subprocess.run(["ffmpeg", "-y", "-i", str(wav), "-codec:a", "libmp3lame", "-qscale:a", "5", str(path)], check=True)
+    wav.unlink(missing_ok=True)
 
 def run(cmd):
     subprocess.run(cmd, check=True)
