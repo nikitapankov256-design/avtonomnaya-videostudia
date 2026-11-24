@@ -91,23 +91,34 @@ def draw_frame(i,label,caption,frame,total):
     if line: lines.append(line)
     for n,ln in enumerate(lines[:3]): d.text((55,1105+n*39),ln,font=font(26),fill=(245,245,245))
     return im
-async def make_voice(text,path):
+VOICE_PROFILES = {
+    "narrator": ("ru-RU-DmitryNeural", "-10%", "-18Hz"),
+    "andrey": ("ru-RU-DmitryNeural", "-6%", "-22Hz"),
+    "anna": ("ru-RU-SvetlanaNeural", "-4%", "+0Hz"),
+}
+async def make_voice(text, path, speaker="narrator"):
     try:
         import edge_tts
-        # One consistent adult male voice; lower pitch and slightly slower delivery.
-        await edge_tts.Communicate(text,"ru-RU-DmitryNeural",rate="-7%",pitch="-14Hz",volume="+0%").save(str(path))
-        if path.exists() and path.stat().st_size>1000: return
-    except Exception as e: print("Neural voice unavailable; offline fallback:",e)
-    wav=path.with_suffix(".wav")
-    subprocess.run(["espeak-ng","-v","ru+m3","-s","132","-p","28","-w",str(wav),text],check=True)
-    run(["ffmpeg","-y","-i",str(wav),"-codec:a","libmp3lame","-qscale:a","4",str(path)])
+        voice, rate, pitch = VOICE_PROFILES[speaker]
+        await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume="+0%").save(str(path))
+        if path.exists() and path.stat().st_size > 1000:
+            return
+    except Exception as exc:
+        print("Edge TTS unavailable; using local fallback:", exc)
+    wav = path.with_suffix(".wav")
+    voice_flag = "ru+f3" if speaker == "anna" else "ru+m3"
+    speed = 145 if speaker == "andrey" else 138
+    pitch_value = 32 if speaker == "anna" else (24 if speaker == "andrey" else 28)
+    subprocess.run(["espeak-ng", "-v", voice_flag, "-s", str(speed), "-p", str(pitch_value), "-w", str(wav), text], check=True)
+    run(["ffmpeg", "-y", "-i", str(wav), "-codec:a", "libmp3lame", "-qscale:a", "4", str(path)])
     wav.unlink(missing_ok=True)
+
 async def main():
     clips=[]
     for i,(line,label,caption) in enumerate(SCENES):
         audio=WORK/f"voice_{i:02d}.mp3"; frames_dir=WORK/f"frames_{i:02d}"
         frames_dir.mkdir(exist_ok=True)
-        await make_voice(line,audio)
+        await make_voice(line,audio,"andrey" if label=="АНДРЕЙ" else ("anna" if label=="АННА" else "narrator"))
         dur=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=nw=1:nk=1",str(audio)],text=True).strip())+0.5
         count=max(24,int(dur*FPS))
         for k in range(count):
