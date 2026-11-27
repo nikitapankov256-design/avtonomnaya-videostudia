@@ -132,11 +132,11 @@ class MainActivity : AppCompatActivity() {
                     .setDescription("Сохранение готового ролика")
                     .setMimeType("video/mp4")
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "AI_Video_\${System.currentTimeMillis()}.mp4")
+                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "AI_Video_${System.currentTimeMillis()}.mp4")
                 dm.enqueue(req)
                 updateStatus("Готово. MP4 сохраняется в Movies. Уведомление появится после загрузки файла.")
             } catch (e: Exception) {
-                updateStatus("Ошибка: \${e.message ?: "неизвестная ошибка"}")
+                updateStatus("Ошибка: ${e.message ?: "неизвестная ошибка"}")
             } finally {
                 runOnUiThread { generate.isEnabled = true }
             }
