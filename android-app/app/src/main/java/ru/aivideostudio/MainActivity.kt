@@ -93,12 +93,12 @@ class MainActivity : Activity() {
         val rawTopic = topic.text.toString().trim()
         if (key.isEmpty()) { apiKey.error = "Нужен API-ключ fal.ai"; return }
         if (rawTopic.length < 5) { topic.error = "Опиши тему подробнее"; return }
+        val seconds = listOf("5", "10", "15")[duration.selectedItemPosition]
+        val aspect = listOf("9:16", "16:9", "1:1")[ratio.selectedItemPosition]
         generate.isEnabled = false
         status.text = "Отправляю запрос на генерацию…"
         Thread {
             try {
-                val seconds = listOf("5", "10", "15")[duration.selectedItemPosition]
-                val aspect = listOf("9:16", "16:9", "1:1")[ratio.selectedItemPosition]
                 val cinematicPrompt = "Create a cinematic, photorealistic live-action video based on this idea: $rawTopic. " +
                     "Real human actors, natural facial expressions, believable body movement, coherent scene, " +
                     "professional camera movement, realistic lighting, detailed environment, film color grading. " +
