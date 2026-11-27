@@ -34,12 +34,8 @@ jobs:
         run: |
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" || find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 -name sdkmanager -type f
           echo "ANDROID_HOME=$ANDROID_HOME"
-          ls "$ANDROID_HOME/platforms" || true
-      - name: Install Android SDK packages
-        run: |
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+          ls "$ANDROID_HOME/platforms"
+          test -d "$ANDROID_HOME/platforms/android-35"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
