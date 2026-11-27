@@ -9,13 +9,13 @@ import android.os.Environment
 import android.view.Gravity
 import android.view.View
 import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
     private lateinit var apiKey: EditText
     private lateinit var topic: EditText
     private lateinit var duration: Spinner
