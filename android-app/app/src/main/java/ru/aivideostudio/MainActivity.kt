@@ -108,6 +108,7 @@ class MainActivity : Activity() {
                     .put("duration", seconds)
                     .put("aspect_ratio", aspect)
                     .put("generate_audio", false)
+                    .put("shot_type", "intelligent")
                     .put("negative_prompt", "cartoon, illustration, slideshow, still image, distorted face, extra fingers, blurry, low quality")
                 val submit = request("https://queue.fal.run/$model", "POST", key, payload.toString())
                 val requestId = submit.optString("request_id")
